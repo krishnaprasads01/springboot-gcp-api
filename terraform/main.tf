@@ -81,11 +81,6 @@ resource "google_cloud_run_v2_service" "api_service" {
         name  = "SPRING_PROFILES_ACTIVE"
         value = "local"  # Use H2 in-memory database
       }
-      
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
     }
   }
   
