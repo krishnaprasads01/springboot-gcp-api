@@ -1,5 +1,7 @@
 name: Deploy Spring Boot API to GCP
-
+permissions:
+  contents: read
+  checks: write
 on:
   push:
     branches: [ main, develop ]
