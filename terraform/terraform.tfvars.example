@@ -1,0 +1,10 @@
+project_id     = "your-gcp-project-id"
+region         = "us-central1"
+zone           = "us-central1-a"
+app_name       = "springboot-gcp-api"
+environment    = "dev"
+database_tier  = "db-f1-micro"
+min_instances  = 0
+max_instances  = 5
+cpu_limit      = "1000m"
+memory_limit   = "512Mi"
