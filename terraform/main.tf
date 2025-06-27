@@ -51,90 +51,103 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-# VPC Network
-resource "google_compute_network" "vpc_network" {
-  name                    = "${var.app_name}-vpc-${random_id.suffix.hex}"
-  auto_create_subnetworks = false
-  
-  depends_on = [google_project_service.required_apis]
-}
+# VPC Network - Commented out for minimal setup
+# resource "google_compute_network" "vpc_network" {
+#   name                    = "${var.app_name}-vpc-${random_id.suffix.hex}"
+#   auto_create_subnetworks = false
+#   
+#   depends_on = [google_project_service.required_apis]
+# }
 
-# Subnet
-resource "google_compute_subnetwork" "subnet" {
-  name          = "${var.app_name}-subnet-${random_id.suffix.hex}"
-  ip_cidr_range = "10.0.0.0/24"
-  region        = var.region
-  network       = google_compute_network.vpc_network.id
+# Subnet - Commented out for minimal setup
+# resource "google_compute_subnetwork" "subnet" {
+#   name          = "${var.app_name}-subnet-${random_id.suffix.hex}"
+#   ip_cidr_range = "10.0.0.0/24"
+#   region        = var.region
+#   network       = google_compute_network.vpc_network.id
 
-  private_ip_google_access = true
-}
+#   private_ip_google_access = true
+# }
 
-# Private IP allocation for Cloud SQL
-resource "google_compute_global_address" "private_ip_allocation" {
-  name          = "${var.app_name}-private-ip-${random_id.suffix.hex}"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = google_compute_network.vpc_network.id
-  
-  depends_on = [google_project_service.required_apis]
-}
+# Private IP allocation for Cloud SQL - Commented out for minimal setup
+# resource "google_compute_global_address" "private_ip_allocation" {
+#   name          = "${var.app_name}-private-ip-${random_id.suffix.hex}"
+#   purpose       = "VPC_PEERING"
+#   address_type  = "INTERNAL"
+#   prefix_length = 16
+#   network       = google_compute_network.vpc_network.id
+#   
+#   depends_on = [google_project_service.required_apis]
+# }
 
-# Private connection for Cloud SQL
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = google_compute_network.vpc_network.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_allocation.name]
-  
-  depends_on = [google_project_service.required_apis]
-}
+# Private connection for Cloud SQL - Commented out for minimal setup
+# resource "google_service_networking_connection" "private_vpc_connection" {
+#   network                 = google_compute_network.vpc_network.id
+#   service                 = "servicenetworking.googleapis.com"
+#   reserved_peering_ranges = [google_compute_global_address.private_ip_allocation.name]
+#   
+#   depends_on = [google_project_service.required_apis]
+# }
 
-# VPC Access Connector for Cloud Run
-resource "google_vpc_access_connector" "connector" {
-  name           = "${var.app_name}-connector-${random_id.suffix.hex}"
-  region         = var.region
-  network        = google_compute_network.vpc_network.name
-  ip_cidr_range  = "10.8.0.0/28"
-  max_throughput = 300
-  
-  depends_on = [
-    google_project_service.required_apis,
-    google_compute_subnetwork.subnet
-  ]
-}
+# VPC Access Connector for Cloud Run - Commented out for minimal setup
+# resource "google_vpc_access_connector" "connector" {
+#   name           = "${var.app_name}-connector-${random_id.suffix.hex}"
+#   region         = var.region
+#   network        = google_compute_network.vpc_network.name
+#   ip_cidr_range  = "10.8.0.0/28"
+#   max_throughput = 300
+#   
+#   depends_on = [
+#     google_project_service.required_apis,
+#     google_compute_subnetwork.subnet
+#   ]
+# }
 
-# Cloud SQL Database Instance
+# Cloud SQL Database Instance - Minimal Configuration
 resource "google_sql_database_instance" "postgres" {
   name             = "${var.app_name}-db-${random_id.suffix.hex}"
-  database_version = var.database_version
+  database_version = "POSTGRES_15"
   region           = var.region
   
   deletion_protection = false
 
   settings {
-    tier = var.database_tier
+    tier            = "db-f1-micro"  # Smallest possible tier
+    disk_size       = 10             # Minimum disk size
+    disk_type       = "PD_HDD"       # Cheaper storage
+    disk_autoresize = false          # Disable auto-resize
     
+    # Public IP for simplicity - much faster to create
     ip_configuration {
-      ipv4_enabled                                  = false
-      private_network                              = google_compute_network.vpc_network.id
-      enable_private_path_for_google_cloud_services = true
+      ipv4_enabled    = true
+      authorized_networks {
+        value = "0.0.0.0/0"  # Allow all IPs (for development only)
+        name  = "all"
+      }
     }
 
+    # Disable backup for faster creation
     backup_configuration {
-      enabled    = true
-      start_time = "23:00"
+      enabled = false
     }
 
-    database_flags {
-      name  = "log_statement"
-      value = "all"
+    # Disable maintenance window
+    maintenance_window {
+      day  = 7
+      hour = 3
     }
   }
 
+  # Remove VPC dependency for faster creation
   depends_on = [
-    google_service_networking_connection.private_vpc_connection,
     google_project_service.required_apis
   ]
+
+  timeouts {
+    create = "20m"
+    update = "20m"
+    delete = "20m"
+  }
 }
 
 # Database
@@ -200,7 +213,7 @@ resource "google_secret_manager_secret_iam_member" "db_password_accessor" {
   member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# Cloud Run Service
+# Cloud Run Service - Simplified without VPC
 resource "google_cloud_run_v2_service" "api_service" {
   name     = "${var.app_name}-service-${random_id.suffix.hex}"
   location = var.region
@@ -208,10 +221,7 @@ resource "google_cloud_run_v2_service" "api_service" {
   template {
     service_account = google_service_account.cloud_run_sa.email
     
-    vpc_access {
-      connector = google_vpc_access_connector.connector.id
-      egress    = "PRIVATE_RANGES_ONLY"
-    }
+    # Remove VPC access for simplicity
     
     scaling {
       min_instance_count = var.min_instances
@@ -271,12 +281,17 @@ resource "google_cloud_run_v2_service" "api_service" {
         name  = "PORT"
         value = tostring(var.container_port)
       }
+
+      # Add database connection via public IP
+      env {
+        name  = "DATABASE_URL"
+        value = "jdbc:postgresql://${google_sql_database_instance.postgres.public_ip_address}:5432/${google_sql_database.database.name}?sslmode=require"
+      }
     }
   }
   
   depends_on = [
     google_project_service.required_apis,
-    google_vpc_access_connector.connector,
     google_sql_database_instance.postgres,
     google_secret_manager_secret_version.db_password
   ]
