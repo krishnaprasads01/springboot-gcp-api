@@ -8,6 +8,11 @@ output "database_connection_name" {
   value       = google_sql_database_instance.postgres.connection_name
 }
 
+output "database_public_ip" {
+  description = "Database public IP address"
+  value       = google_sql_database_instance.postgres.public_ip_address
+}
+
 output "database_name" {
   description = "Database name"
   value       = google_sql_database.database.name
@@ -34,10 +39,11 @@ output "service_account_email" {
   value       = google_service_account.cloud_run_sa.email
 }
 
-output "vpc_network_name" {
-  description = "VPC Network name"
-  value       = google_compute_network.vpc_network.name
-}
+# VPC Network output - Commented out since VPC is not used in minimal setup
+# output "vpc_network_name" {
+#   description = "VPC Network name"
+#   value       = google_compute_network.vpc_network.name
+# }
 
 output "container_image_url" {
   description = "Container image URL for Cloud Run"
