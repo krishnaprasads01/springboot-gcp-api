@@ -53,6 +53,11 @@
         
         <dependency>
             <groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-firestore</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.google.cloud</groupId>
             <artifactId>spring-cloud-gcp-starter-sql-postgresql</artifactId>
         </dependency>
         

@@ -88,6 +88,23 @@ spring:
 spring:
   config:
     activate:
+      on-profile: firestore
+  
+  # No datasource needed for Firestore
+  jpa:
+    hibernate:
+      ddl-auto: none  # Disable JPA for NoSQL
+  
+  cloud:
+    gcp:
+      firestore:
+        enabled: true
+        project-id: ${GCP_PROJECT_ID:}
+
+---
+spring:
+  config:
+    activate:
       on-profile: local
   
   h2:
