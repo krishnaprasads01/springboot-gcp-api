@@ -24,19 +24,11 @@ provider "google-beta" {
   zone    = var.zone
 }
 
-# Enable required APIs
+# Enable only essential APIs for minimal setup
 resource "google_project_service" "required_apis" {
   for_each = toset([
-    "cloudresourcemanager.googleapis.com",
-    "cloudbuild.googleapis.com",
     "run.googleapis.com",
-    "sql-component.googleapis.com",
-    "sqladmin.googleapis.com",
-    "vpcaccess.googleapis.com",
-    "servicenetworking.googleapis.com",
-    "iam.googleapis.com",
-    "logging.googleapis.com",
-    "monitoring.googleapis.com"
+    "sqladmin.googleapis.com"
   ])
 
   service = each.key
@@ -103,7 +95,7 @@ resource "random_id" "suffix" {
 #   ]
 # }
 
-# Cloud SQL Database Instance - Minimal Configuration
+# Cloud SQL Database Instance - Ultra minimal configuration
 resource "google_sql_database_instance" "postgres" {
   name             = "${var.app_name}-db-${random_id.suffix.hex}"
   database_version = "POSTGRES_15"
@@ -112,41 +104,35 @@ resource "google_sql_database_instance" "postgres" {
   deletion_protection = false
 
   settings {
-    tier            = "db-f1-micro"  # Smallest possible tier
-    disk_size       = 10             # Minimum disk size
-    disk_type       = "PD_HDD"       # Cheaper storage
-    disk_autoresize = false          # Disable auto-resize
+    tier                = "db-f1-micro"  # Smallest possible
+    disk_size          = 10             # Minimum
+    disk_type          = "PD_HDD"       # Cheapest
+    disk_autoresize    = false
+    availability_type  = "ZONAL"       # Single zone for speed
     
-    # Public IP for simplicity - much faster to create
+    # Public IP - fastest setup
     ip_configuration {
-      ipv4_enabled    = true
+      ipv4_enabled = true
       authorized_networks {
-        value = "0.0.0.0/0"  # Allow all IPs (for development only)
+        value = "0.0.0.0/0"
         name  = "all"
       }
     }
 
-    # Disable backup for faster creation
+    # Disable everything for speed
     backup_configuration {
       enabled = false
     }
-
-    # Disable maintenance window
-    maintenance_window {
-      day  = 7
-      hour = 3
-    }
+    
+    # Remove database flags
   }
 
-  # Remove VPC dependency for faster creation
-  depends_on = [
-    google_project_service.required_apis
-  ]
+  depends_on = [google_project_service.required_apis]
 
   timeouts {
-    create = "20m"
-    update = "20m"
-    delete = "20m"
+    create = "15m"  # Reduced timeout
+    update = "15m"
+    delete = "15m"
   }
 }
 
@@ -156,10 +142,10 @@ resource "google_sql_database" "database" {
   instance = google_sql_database_instance.postgres.name
 }
 
-# Database User
+# Database User - Simple password
 resource "random_password" "db_password" {
-  length  = 16
-  special = true
+  length  = 12  # Shorter password
+  special = false  # No special chars for simplicity
 }
 
 resource "google_sql_user" "users" {
@@ -168,52 +154,22 @@ resource "google_sql_user" "users" {
   password = random_password.db_password.result
 }
 
-# Service Account for Cloud Run
+# Service Account for Cloud Run - Minimal
 resource "google_service_account" "cloud_run_sa" {
-  account_id   = "${var.app_name}-run-sa-${random_id.suffix.hex}"
-  display_name = "Cloud Run Service Account for ${var.app_name}"
+  account_id   = "${var.app_name}-sa-${random_id.suffix.hex}"
+  display_name = "Cloud Run SA"
   
   depends_on = [google_project_service.required_apis]
 }
 
-# IAM roles for the service account
+# Only essential IAM role
 resource "google_project_iam_member" "cloud_run_sa_roles" {
-  for_each = toset([
-    "roles/cloudsql.client",
-    "roles/logging.logWriter",
-    "roles/monitoring.metricWriter",
-    "roles/cloudtrace.agent"
-  ])
-  
   project = var.project_id
-  role    = each.key
+  role    = "roles/cloudsql.client"
   member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
 }
 
-# Secret for database password
-resource "google_secret_manager_secret" "db_password" {
-  secret_id = "${var.app_name}-db-password-${random_id.suffix.hex}"
-  
-  replication {
-    auto {}
-  }
-  
-  depends_on = [google_project_service.required_apis]
-}
-
-resource "google_secret_manager_secret_version" "db_password" {
-  secret      = google_secret_manager_secret.db_password.id
-  secret_data = random_password.db_password.result
-}
-
-# Secret accessor role for service account
-resource "google_secret_manager_secret_iam_member" "db_password_accessor" {
-  secret_id = google_secret_manager_secret.db_password.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_run_sa.email}"
-}
-
-# Cloud Run Service - Simplified without VPC
+# Cloud Run Service - Ultra simplified
 resource "google_cloud_run_v2_service" "api_service" {
   name     = "${var.app_name}-service-${random_id.suffix.hex}"
   location = var.region
@@ -221,24 +177,22 @@ resource "google_cloud_run_v2_service" "api_service" {
   template {
     service_account = google_service_account.cloud_run_sa.email
     
-    # Remove VPC access for simplicity
-    
     scaling {
-      min_instance_count = var.min_instances
-      max_instance_count = var.max_instances
+      min_instance_count = 0  # Scale to zero
+      max_instance_count = 2  # Lower max
     }
     
     containers {
       image = "gcr.io/${var.project_id}/${var.app_name}:latest"
       
       ports {
-        container_port = var.container_port
+        container_port = 8080
       }
       
       resources {
         limits = {
-          cpu    = var.cpu_limit
-          memory = var.memory_limit
+          cpu    = "1"
+          memory = "512Mi"  # Lower memory
         }
       }
       
@@ -267,22 +221,17 @@ resource "google_cloud_run_v2_service" "api_service" {
         value = google_sql_user.users.name
       }
       
+      # Direct password - not secure but faster for dev
       env {
-        name = "GCP_DATABASE_PASSWORD"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.db_password.secret_id
-            version = "latest"
-          }
-        }
+        name  = "GCP_DATABASE_PASSWORD"
+        value = random_password.db_password.result
       }
       
       env {
         name  = "PORT"
-        value = tostring(var.container_port)
+        value = "8080"
       }
 
-      # Add database connection via public IP
       env {
         name  = "DATABASE_URL"
         value = "jdbc:postgresql://${google_sql_database_instance.postgres.public_ip_address}:5432/${google_sql_database.database.name}?sslmode=require"
@@ -292,8 +241,7 @@ resource "google_cloud_run_v2_service" "api_service" {
   
   depends_on = [
     google_project_service.required_apis,
-    google_sql_database_instance.postgres,
-    google_secret_manager_secret_version.db_password
+    google_sql_database_instance.postgres
   ]
 }
 
