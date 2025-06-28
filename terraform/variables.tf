@@ -28,15 +28,21 @@ variable "environment" {
 }
 
 variable "database_tier" {
-  description = "Cloud SQL instance tier"
+  description = "Cloud SQL instance tier (deprecated - using Firestore)"
   type        = string
   default     = "db-f1-micro"
 }
 
 variable "database_version" {
-  description = "PostgreSQL version"
+  description = "PostgreSQL version (deprecated - using Firestore)"
   type        = string
   default     = "POSTGRES_15"
+}
+
+variable "firestore_location" {
+  description = "Firestore database location"
+  type        = string
+  default     = "us-central"
 }
 
 variable "min_instances" {

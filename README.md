@@ -1,44 +1,32 @@
-# Spring Boot GCP API
+# Spring Boot GCP API with Firestore
 
-A sample Spring Boot REST API with PostgreSQL database, designed for deployment on Google Cloud Platform using Cloud Run and Cloud SQL.
+A unified Spring Boot REST API with Firestore backend, designed for deployment on Google Cloud Platform using Cloud Run and Firestore.
 
 ## Features
 
 - ✅ RESTful API with CRUD operations for Task management
-- ✅ **Dual Database Support**: PostgreSQL (JPA) and Firestore (NoSQL)
+- ✅ **Unified Database Architecture**: Single codebase using Firestore for both local and cloud
 - ✅ Containerized application with Docker
 - ✅ Infrastructure as Code with Terraform
 - ✅ CI/CD with GitHub Actions
 - ✅ Health checks and monitoring
 - ✅ Security scanning with Trivy
 - ✅ Environment-specific configurations
-- ✅ **Firestore Integration** with Spring Cloud GCP
+- ✅ **Google Cloud Firestore Integration** with Spring Cloud GCP
 
 ## API Endpoints
 
-### PostgreSQL/JPA Endpoints (Default)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Root endpoint with API information |
 | GET | `/health` | Health check endpoint |
 | GET | `/api/tasks` | Get all tasks |
-| GET | `/api/tasks/{id}` | Get task by ID (Long) |
+| GET | `/api/tasks/{id}` | Get task by ID (String UUID) |
 | POST | `/api/tasks` | Create a new task |
 | PUT | `/api/tasks/{id}` | Update an existing task |
 | DELETE | `/api/tasks/{id}` | Delete a task |
 | GET | `/api/tasks/status/{status}` | Get tasks by status |
 | GET | `/api/tasks/search?keyword={keyword}` | Search tasks |
-
-### NoSQL Endpoints (use `firestore`, `mongodb`, or `dynamodb` profile)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/nosql/tasks` | Get all tasks from NoSQL database |
-| GET | `/api/nosql/tasks/{id}` | Get task by ID (String UUID) |
-| POST | `/api/nosql/tasks` | Create a new task |
-| PUT | `/api/nosql/tasks/{id}` | Update an existing task |
-| DELETE | `/api/nosql/tasks/{id}` | Delete a task |
-| GET | `/api/nosql/tasks/status/{status}` | Get tasks by status |
-| GET | `/api/nosql/tasks/search?keyword={keyword}` | Search tasks |
 
 ## Task Status Values
 
@@ -65,47 +53,40 @@ cd springboot-gcp-api
 
 2. Run the application:
 
-#### With H2 Database (Default):
+#### With H2 Database (Local Development):
 ```bash
+# Default profile uses H2 in-memory database
 ./mvnw spring-boot:run
 ```
 
-#### With Firestore:
+#### With Firestore (Local Development):
 ```bash
-# Set environment variables
+# Set environment variables for Firestore
 export GCP_PROJECT_ID=your-project-id
 export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
 
-# Run with Firestore profile
-./mvnw spring-boot:run -Dspring-boot.run.profiles=firestore
+# Run with default configuration (Firestore enabled)
+./mvnw spring-boot:run
 ```
 
-#### With MongoDB:
+#### With Firestore Emulator (Local Development):
 ```bash
-# Run with MongoDB profile
-./mvnw spring-boot:run -Dspring-boot.run.profiles=mongodb
-```
+# Install and start Firestore emulator
+gcloud components install cloud-firestore-emulator
+gcloud beta emulators firestore start --host-port=localhost:8080
 
-#### With DynamoDB:
-```bash
-# Set AWS credentials
-export AWS_REGION=us-east-1
-export AWS_ACCESS_KEY_ID=your-key
-export AWS_SECRET_ACCESS_KEY=your-secret
+# In another terminal, set emulator environment
+export FIRESTORE_EMULATOR_HOST=localhost:8080
+export GCP_PROJECT_ID=demo-project
 
-# Run with DynamoDB profile
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dynamodb
-```
-
-#### With PostgreSQL:
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=postgresql
+# Run application
+./mvnw spring-boot:run
 ```
 
 3. Access the application:
 - API: http://localhost:8080
 - Health Check: http://localhost:8080/health
-- H2 Console: http://localhost:8080/h2-console
+- H2 Console (local profile only): http://localhost:8080/h2-console
 
 ### Running with Docker
 
@@ -131,23 +112,15 @@ docker run -p 8080:8080 springboot-gcp-api
 ### Required GCP APIs
 
 The following APIs will be automatically enabled by Terraform:
-- Cloud Resource Manager API
-- Cloud Build API
-- Cloud Run API
-- Cloud SQL Admin API
-- VPC Access API
-- Service Networking API
-- IAM API
-- Logging API
-- Monitoring API
+- Cloud Run API (`run.googleapis.com`)
+- Firestore API (`firestore.googleapis.com`) 
+- Cloud Build API (`cloudbuild.googleapis.com`)
+- Container Registry API (`containerregistry.googleapis.com`)
 
 ### Service Account Permissions
 
-Create a service account with the following roles:
-- Cloud Run Admin
-- Cloud SQL Admin
-- Compute Network Admin
-- Service Account Admin
+The Terraform configuration automatically creates a service account with:
+- `roles/datastore.user` - For Firestore read/write access
 - Storage Admin
 - Security Admin (for Secret Manager)
 

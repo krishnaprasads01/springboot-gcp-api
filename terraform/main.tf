@@ -24,10 +24,13 @@ provider "google-beta" {
   zone    = var.zone
 }
 
-# Enable only Cloud Run - No database needed!
+# Enable required APIs for Cloud Run and Firestore
 resource "google_project_service" "required_apis" {
   for_each = toset([
-    "run.googleapis.com"
+    "run.googleapis.com",
+    "firestore.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "containerregistry.googleapis.com"
   ])
 
   service = each.key
@@ -42,15 +45,34 @@ resource "random_id" "suffix" {
   byte_length = 4
 }
 
-# Service Account for Cloud Run - Minimal
+# Service Account for Cloud Run with Firestore access
 resource "google_service_account" "cloud_run_sa" {
   account_id   = "${var.app_name}-sa-${random_id.suffix.hex}"
-  display_name = "Cloud Run SA"
+  display_name = "Cloud Run Service Account for ${var.app_name}"
   
   depends_on = [google_project_service.required_apis]
 }
 
-# Cloud Run Service - H2 in-memory database (no external DB needed!)
+# Grant Firestore access to the service account
+resource "google_project_iam_member" "firestore_user" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa.email}"
+  
+  depends_on = [google_service_account.cloud_run_sa]
+}
+
+# Create Firestore database
+resource "google_firestore_database" "database" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.firestore_location
+  type        = "FIRESTORE_NATIVE"
+
+  depends_on = [google_project_service.required_apis]
+}
+
+# Cloud Run Service with Firestore configuration
 resource "google_cloud_run_v2_service" "api_service" {
   name     = "${var.app_name}-service-${random_id.suffix.hex}"
   location = var.region
@@ -59,8 +81,8 @@ resource "google_cloud_run_v2_service" "api_service" {
     service_account = google_service_account.cloud_run_sa.email
     
     scaling {
-      min_instance_count = 0  # Scale to zero
-      max_instance_count = 2  # Lower max
+      min_instance_count = var.min_instances
+      max_instance_count = var.max_instances
     }
     
     containers {
@@ -73,18 +95,38 @@ resource "google_cloud_run_v2_service" "api_service" {
       resources {
         limits = {
           cpu    = "1"
-          memory = "512Mi"
+          memory = "1Gi"
         }
+      }
+      
+      # Environment variables for Firestore connection
+      env {
+        name  = "GCP_PROJECT_ID"
+        value = var.project_id
+      }
+      
+      env {
+        name  = "GCP_FIRESTORE_ENABLED"
+        value = "true"
       }
       
       env {
         name  = "SPRING_PROFILES_ACTIVE"
-        value = "local"  # Use H2 in-memory database
+        value = "gcp"
+      }
+      
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
       }
     }
   }
   
-  depends_on = [google_project_service.required_apis]
+  depends_on = [
+    google_project_service.required_apis,
+    google_firestore_database.database,
+    google_project_iam_member.firestore_user
+  ]
 }
 
 # IAM policy for Cloud Run service (allow public access)

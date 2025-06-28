@@ -5,6 +5,16 @@ output "cloud_run_service_url" {
 
 # No database outputs needed - using H2 in-memory database
 
+output "firestore_database_name" {
+  description = "Firestore database name"
+  value       = google_firestore_database.database.name
+}
+
+output "firestore_location" {
+  description = "Firestore database location"
+  value       = google_firestore_database.database.location_id
+}
+
 output "project_id" {
   description = "GCP Project ID"
   value       = var.project_id
