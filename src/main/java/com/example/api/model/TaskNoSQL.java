@@ -1,10 +1,13 @@
 package com.example.api.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.cloud.Timestamp;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 public class TaskNoSQL {
     
@@ -19,14 +22,15 @@ public class TaskNoSQL {
     
     private TaskStatus status = TaskStatus.PENDING;
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime createdAt;
+    // Firestore storage fields (Timestamp objects for Firestore compatibility)
+    @JsonIgnore
+    private Timestamp firestoreCreatedAt;
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime updatedAt;
+    @JsonIgnore
+    private Timestamp firestoreUpdatedAt;
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    private LocalDateTime dueDate;
+    @JsonIgnore
+    private Timestamp firestoreDueDate;
     
     private String assignee;
     
@@ -40,8 +44,9 @@ public class TaskNoSQL {
     public TaskNoSQL(String title, String description) {
         this.title = title;
         this.description = description;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        Timestamp now = Timestamp.now();
+        this.firestoreCreatedAt = now;
+        this.firestoreUpdatedAt = now;
     }
     
     // Getters and Setters
@@ -59,7 +64,7 @@ public class TaskNoSQL {
     
     public void setTitle(String title) {
         this.title = title;
-        this.updatedAt = LocalDateTime.now();
+        this.firestoreUpdatedAt = Timestamp.now();
     }
     
     public String getDescription() {
@@ -68,7 +73,7 @@ public class TaskNoSQL {
     
     public void setDescription(String description) {
         this.description = description;
-        this.updatedAt = LocalDateTime.now();
+        this.firestoreUpdatedAt = Timestamp.now();
     }
     
     public TaskStatus getStatus() {
@@ -77,32 +82,76 @@ public class TaskNoSQL {
     
     public void setStatus(TaskStatus status) {
         this.status = status;
-        this.updatedAt = LocalDateTime.now();
+        this.firestoreUpdatedAt = Timestamp.now();
     }
     
+    // JSON getters/setters for LocalDateTime (for API responses)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getCreatedAt() {
-        return createdAt;
+        return firestoreCreatedAt != null ? 
+            LocalDateTime.ofEpochSecond(firestoreCreatedAt.getSeconds(), 
+                                       (int) firestoreCreatedAt.getNanos(), 
+                                       ZoneOffset.UTC) : null;
     }
     
     public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+        this.firestoreCreatedAt = createdAt != null ? 
+            Timestamp.ofTimeSecondsAndNanos(createdAt.toEpochSecond(ZoneOffset.UTC), 
+                                           createdAt.getNano()) : null;
     }
     
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getUpdatedAt() {
-        return updatedAt;
+        return firestoreUpdatedAt != null ? 
+            LocalDateTime.ofEpochSecond(firestoreUpdatedAt.getSeconds(), 
+                                       (int) firestoreUpdatedAt.getNanos(), 
+                                       ZoneOffset.UTC) : null;
     }
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+        this.firestoreUpdatedAt = updatedAt != null ? 
+            Timestamp.ofTimeSecondsAndNanos(updatedAt.toEpochSecond(ZoneOffset.UTC), 
+                                           updatedAt.getNano()) : null;
     }
     
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getDueDate() {
-        return dueDate;
+        return firestoreDueDate != null ? 
+            LocalDateTime.ofEpochSecond(firestoreDueDate.getSeconds(), 
+                                       (int) firestoreDueDate.getNanos(), 
+                                       ZoneOffset.UTC) : null;
     }
     
     public void setDueDate(LocalDateTime dueDate) {
-        this.dueDate = dueDate;
-        this.updatedAt = LocalDateTime.now();
+        this.firestoreDueDate = dueDate != null ? 
+            Timestamp.ofTimeSecondsAndNanos(dueDate.toEpochSecond(ZoneOffset.UTC), 
+                                           dueDate.getNano()) : null;
+        this.firestoreUpdatedAt = Timestamp.now();
+    }
+    
+    // Firestore getters/setters (for database storage)
+    public Timestamp getFirestoreCreatedAt() {
+        return firestoreCreatedAt;
+    }
+    
+    public void setFirestoreCreatedAt(Timestamp firestoreCreatedAt) {
+        this.firestoreCreatedAt = firestoreCreatedAt;
+    }
+    
+    public Timestamp getFirestoreUpdatedAt() {
+        return firestoreUpdatedAt;
+    }
+    
+    public void setFirestoreUpdatedAt(Timestamp firestoreUpdatedAt) {
+        this.firestoreUpdatedAt = firestoreUpdatedAt;
+    }
+    
+    public Timestamp getFirestoreDueDate() {
+        return firestoreDueDate;
+    }
+    
+    public void setFirestoreDueDate(Timestamp firestoreDueDate) {
+        this.firestoreDueDate = firestoreDueDate;
     }
     
     public String getAssignee() {
@@ -111,7 +160,7 @@ public class TaskNoSQL {
     
     public void setAssignee(String assignee) {
         this.assignee = assignee;
-        this.updatedAt = LocalDateTime.now();
+        this.firestoreUpdatedAt = Timestamp.now();
     }
     
     @Override
@@ -121,9 +170,9 @@ public class TaskNoSQL {
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
                 ", status=" + status +
-                ", createdAt=" + createdAt +
-                ", updatedAt=" + updatedAt +
-                ", dueDate=" + dueDate +
+                ", createdAt=" + getCreatedAt() +
+                ", updatedAt=" + getUpdatedAt() +
+                ", dueDate=" + getDueDate() +
                 ", assignee='" + assignee + '\'' +
                 '}';
     }

@@ -1,11 +1,11 @@
 package com.example.api.repository;
 
 import com.example.api.model.TaskNoSQL;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.Firestore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -55,9 +55,9 @@ public class TaskRepositoryImpl implements TaskRepositoryNoSQL {
         if (task.getId() == null || task.getId().isEmpty()) {
             // Create new task
             task.setId(UUID.randomUUID().toString());
-            task.setCreatedAt(LocalDateTime.now());
+            task.setFirestoreCreatedAt(Timestamp.now());
         }
-        task.setUpdatedAt(LocalDateTime.now());
+        task.setFirestoreUpdatedAt(Timestamp.now());
         
         firestore.collection(COLLECTION_NAME)
                 .document(task.getId())

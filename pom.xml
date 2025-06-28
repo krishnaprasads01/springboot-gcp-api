@@ -124,7 +124,7 @@
                 <version>3.4.0</version>
                 <configuration>
                     <to>
-                        <image>gcr.io/${project.id}/springboot-gcp-api:${project.version}</image>
+                        <image>us-central1-docker.pkg.dev/macro-haven-445018-d7/springboot-repo/springboot-gcp-api:${project.version}</image>
                     </to>
                     <container>
                         <jvmFlags>
