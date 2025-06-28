@@ -62,9 +62,9 @@ resource "google_project_iam_member" "firestore_user" {
   depends_on = [google_service_account.cloud_run_sa]
 }
 
-# Firestore database - import existing or create new
-# If database already exists, import it first:
-# terraform import google_firestore_database.database projects/YOUR_PROJECT_ID/databases/(default)
+# Firestore database - temporarily disabled to use existing database
+# Uncomment this block if you need to create a new database in a fresh project
+/*
 resource "google_firestore_database" "database" {
   project     = var.project_id
   name        = "(default)"
@@ -78,6 +78,10 @@ resource "google_firestore_database" "database" {
 
   depends_on = [google_project_service.required_apis]
 }
+*/
+
+# Use existing Firestore database (manual reference)
+# The existing database will be used by the application via environment variables
 
 # Cloud Run Service with Firestore configuration
 resource "google_cloud_run_v2_service" "api_service" {
@@ -131,7 +135,6 @@ resource "google_cloud_run_v2_service" "api_service" {
   
   depends_on = [
     google_project_service.required_apis,
-    google_firestore_database.database,
     google_project_iam_member.firestore_user
   ]
 }

@@ -5,6 +5,8 @@ output "cloud_run_service_url" {
 
 # No database outputs needed - using H2 in-memory database
 
+# Firestore outputs - disabled since using existing database
+/*
 output "firestore_database_name" {
   description = "Firestore database name"
   value       = google_firestore_database.database.name
@@ -13,6 +15,18 @@ output "firestore_database_name" {
 output "firestore_location" {
   description = "Firestore database location"
   value       = google_firestore_database.database.location_id
+}
+*/
+
+# Static outputs for existing database
+output "firestore_database_name" {
+  description = "Firestore database name (using existing)"
+  value       = "(default)"
+}
+
+output "firestore_location" {
+  description = "Firestore database location (using existing)"
+  value       = var.firestore_location
 }
 
 output "project_id" {
