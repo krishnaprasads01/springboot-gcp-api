@@ -32,6 +32,16 @@ public class TaskNoSQL {
     @JsonIgnore
     private Timestamp firestoreDueDate;
     
+    // Legacy compatibility fields (for old data in Firestore)
+    @JsonIgnore
+    private Object createdAt; // Can be LocalDateTime or Timestamp
+    
+    @JsonIgnore
+    private Object updatedAt; // Can be LocalDateTime or Timestamp
+    
+    @JsonIgnore
+    private Object dueDate; // Can be LocalDateTime or Timestamp
+    
     private String assignee;
     
     public enum TaskStatus {
@@ -88,10 +98,24 @@ public class TaskNoSQL {
     // JSON getters/setters for LocalDateTime (for API responses)
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getCreatedAt() {
-        return firestoreCreatedAt != null ? 
-            LocalDateTime.ofEpochSecond(firestoreCreatedAt.getSeconds(), 
-                                       (int) firestoreCreatedAt.getNanos(), 
-                                       ZoneOffset.UTC) : null;
+        // Try new format first
+        if (firestoreCreatedAt != null) {
+            return LocalDateTime.ofEpochSecond(firestoreCreatedAt.getSeconds(), 
+                                             (int) firestoreCreatedAt.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // Fall back to legacy format for backwards compatibility
+        if (createdAt instanceof Timestamp) {
+            Timestamp ts = (Timestamp) createdAt;
+            return LocalDateTime.ofEpochSecond(ts.getSeconds(), 
+                                             (int) ts.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // If it's already LocalDateTime (old format), return as is
+        if (createdAt instanceof LocalDateTime) {
+            return (LocalDateTime) createdAt;
+        }
+        return null;
     }
     
     public void setCreatedAt(LocalDateTime createdAt) {
@@ -102,10 +126,24 @@ public class TaskNoSQL {
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getUpdatedAt() {
-        return firestoreUpdatedAt != null ? 
-            LocalDateTime.ofEpochSecond(firestoreUpdatedAt.getSeconds(), 
-                                       (int) firestoreUpdatedAt.getNanos(), 
-                                       ZoneOffset.UTC) : null;
+        // Try new format first
+        if (firestoreUpdatedAt != null) {
+            return LocalDateTime.ofEpochSecond(firestoreUpdatedAt.getSeconds(), 
+                                             (int) firestoreUpdatedAt.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // Fall back to legacy format for backwards compatibility
+        if (updatedAt instanceof Timestamp) {
+            Timestamp ts = (Timestamp) updatedAt;
+            return LocalDateTime.ofEpochSecond(ts.getSeconds(), 
+                                             (int) ts.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // If it's already LocalDateTime (old format), return as is
+        if (updatedAt instanceof LocalDateTime) {
+            return (LocalDateTime) updatedAt;
+        }
+        return null;
     }
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
@@ -116,10 +154,24 @@ public class TaskNoSQL {
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     public LocalDateTime getDueDate() {
-        return firestoreDueDate != null ? 
-            LocalDateTime.ofEpochSecond(firestoreDueDate.getSeconds(), 
-                                       (int) firestoreDueDate.getNanos(), 
-                                       ZoneOffset.UTC) : null;
+        // Try new format first
+        if (firestoreDueDate != null) {
+            return LocalDateTime.ofEpochSecond(firestoreDueDate.getSeconds(), 
+                                             (int) firestoreDueDate.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // Fall back to legacy format for backwards compatibility
+        if (dueDate instanceof Timestamp) {
+            Timestamp ts = (Timestamp) dueDate;
+            return LocalDateTime.ofEpochSecond(ts.getSeconds(), 
+                                             (int) ts.getNanos(), 
+                                             ZoneOffset.UTC);
+        }
+        // If it's already LocalDateTime (old format), return as is
+        if (dueDate instanceof LocalDateTime) {
+            return (LocalDateTime) dueDate;
+        }
+        return null;
     }
     
     public void setDueDate(LocalDateTime dueDate) {
@@ -152,6 +204,31 @@ public class TaskNoSQL {
     
     public void setFirestoreDueDate(Timestamp firestoreDueDate) {
         this.firestoreDueDate = firestoreDueDate;
+    }
+    
+    // Legacy field getters/setters for backwards compatibility
+    public Object getLegacyCreatedAt() {
+        return createdAt;
+    }
+    
+    public void setLegacyCreatedAt(Object createdAt) {
+        this.createdAt = createdAt;
+    }
+    
+    public Object getLegacyUpdatedAt() {
+        return updatedAt;
+    }
+    
+    public void setLegacyUpdatedAt(Object updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+    
+    public Object getLegacyDueDate() {
+        return dueDate;
+    }
+    
+    public void setLegacyDueDate(Object dueDate) {
+        this.dueDate = dueDate;
     }
     
     public String getAssignee() {
