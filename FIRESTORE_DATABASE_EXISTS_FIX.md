@@ -12,80 +12,84 @@ Error: Error creating Database: googleapi: Error 409: Database already exists. P
 - A Firestore database already existed in the target GCP project from a previous deployment or manual creation
 
 ## Solution
-Changed the Terraform configuration to **reference the existing database** instead of trying to create a new one.
+Handle the existing Firestore database by **importing it into Terraform state** before applying the configuration.
 
 ### Changes Made
 
 #### 1. Updated `terraform/main.tf`
-**Before (Resource - Creates new database):**
+**Added lifecycle management to prevent destruction:**
 ```hcl
+# Firestore database - import existing or create new
+# If database already exists, import it first:
+# terraform import google_firestore_database.database projects/YOUR_PROJECT_ID/databases/(default)
 resource "google_firestore_database" "database" {
   project     = var.project_id
   name        = "(default)"
   location_id = var.firestore_location
   type        = "FIRESTORE_NATIVE"
-  
+
+  # Prevent accidental destruction of database with data
+  lifecycle {
+    prevent_destroy = true
+  }
+
   depends_on = [google_project_service.required_apis]
 }
 ```
 
-**After (Data Source - References existing database):**
-```hcl
-# Reference existing Firestore database (instead of creating new one)
-# Note: Only one default Firestore database is allowed per GCP project
-# If database doesn't exist, create it manually first:
-# gcloud firestore databases create --location=us-central1
-data "google_firestore_database" "database" {
-  project  = var.project_id
-  database = "(default)"
-  
-  depends_on = [google_project_service.required_apis]
-}
+#### 2. Import Process
+**Before running terraform apply, import existing database:**
+```bash
+# Check if database exists
+gcloud firestore databases list --project=your-project-id
+
+# If database exists, import it into Terraform state
+cd terraform
+terraform import google_firestore_database.database projects/your-project-id/databases/\(default\)
+
+# Then run terraform apply
+terraform apply -var="project_id=your-project-id"
 ```
-
-#### 2. Updated `terraform/outputs.tf`
-**Before:**
-```hcl
-output "firestore_database_name" {
-  value = google_firestore_database.database.name
-}
-
-output "firestore_location" {
-  value = google_firestore_database.database.location_id
-}
-```
-
-**After:**
-```hcl
-output "firestore_database_name" {
-  value = data.google_firestore_database.database.name
-}
-
-output "firestore_location" {
-  value = data.google_firestore_database.database.location_id
-}
-```
-
-#### 3. Updated Dependencies
-Updated all references from `google_firestore_database.database` to `data.google_firestore_database.database`
 
 ## Verification Steps
 
-### 1. Check if Firestore Database Exists
+### Option 1: Database Already Exists (Most Common)
 ```bash
+# 1. Check if Firestore Database Exists
 gcloud firestore databases list --project=your-project-id
+
+# 2. If database exists, import it into Terraform state
+cd terraform
+terraform init
+terraform import google_firestore_database.database projects/your-project-id/databases/\(default\)
+
+# 3. Run Terraform Apply
+terraform plan -var="project_id=your-project-id"
+terraform apply -var="project_id=your-project-id"
 ```
 
-### 2. If Database Doesn't Exist, Create It Manually
+### Option 2: No Database Exists (New Project)
 ```bash
-gcloud firestore databases create --location=us-central1 --project=your-project-id
-```
+# 1. Check if Firestore Database Exists
+gcloud firestore databases list --project=your-project-id
 
-### 3. Run Terraform Apply
-```bash
+# 2. If no database exists, Terraform will create it
 cd terraform
 terraform init
 terraform plan -var="project_id=your-project-id"
+terraform apply -var="project_id=your-project-id"
+```
+
+### Option 3: Manual Database Creation First
+```bash
+# 1. Create database manually first
+gcloud firestore databases create --location=us-central1 --project=your-project-id
+
+# 2. Import it into Terraform state
+cd terraform
+terraform import google_firestore_database.database projects/your-project-id/databases/\(default\)
+
+# 3. Run Terraform Apply
 terraform apply -var="project_id=your-project-id"
 ```
 

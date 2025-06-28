@@ -7,12 +7,12 @@ output "cloud_run_service_url" {
 
 output "firestore_database_name" {
   description = "Firestore database name"
-  value       = data.google_firestore_database.database.name
+  value       = google_firestore_database.database.name
 }
 
 output "firestore_location" {
   description = "Firestore database location"
-  value       = data.google_firestore_database.database.location_id
+  value       = google_firestore_database.database.location_id
 }
 
 output "project_id" {

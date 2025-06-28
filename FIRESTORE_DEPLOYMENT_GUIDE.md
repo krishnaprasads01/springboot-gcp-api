@@ -65,7 +65,27 @@ This document describes the updated Terraform configuration and Spring Boot setu
    environment       = "prod"
    ```
 
-### Step 2: Deploy Using Script
+### Step 2: Handle Existing Firestore Database (If Applicable)
+
+If you're deploying to a project that already has a Firestore database, use the import helper script:
+
+```bash
+# Run the Firestore import helper script
+./scripts/import-firestore.sh your-project-id
+```
+
+This script will:
+1. Check if a Firestore database already exists
+2. Import it into Terraform state if needed
+3. Run terraform plan to verify the configuration
+
+Alternatively, you can manually import the database:
+```bash
+cd terraform
+terraform import google_firestore_database.database projects/your-project-id/databases/\(default\)
+```
+
+### Step 3: Deploy Using Script
 
 Run the deployment script:
 ```bash
@@ -78,7 +98,7 @@ This script will:
 3. Deploy infrastructure with Terraform
 4. Test the deployment
 
-### Step 3: Manual Terraform Deployment (Alternative)
+### Step 4: Manual Terraform Deployment (Alternative)
 
 If you prefer manual deployment:
 
@@ -150,16 +170,20 @@ gcloud firestore databases describe --database="(default)"
 1. **Firestore Location Conflict**: Ensure `firestore_location` is compatible with your region
 2. **Permissions**: Verify service account has `roles/datastore.user` permission
 3. **Project ID**: Ensure environment variables match your actual project ID
-4. **Database Already Exists**: If you get "Database already exists" error, this is normal - the Terraform configuration uses an existing database instead of creating a new one
+4. **Database Already Exists**: If you get "Database already exists" error, use the import script: `./scripts/import-firestore.sh your-project-id`
 
 ### Firestore Database Management
 
 **Important:** Google Cloud allows only one default Firestore database per project. The Terraform configuration is designed to:
-- Reference an existing Firestore database if one exists
-- If no database exists, create one manually first:
-  ```bash
-  gcloud firestore databases create --location=us-central1 --project=your-project-id
-  ```
+- Create a new Firestore database if none exists
+- Import an existing database into Terraform state if one already exists
+- Use the import helper script: `./scripts/import-firestore.sh your-project-id`
+
+**Manual Import (Alternative):**
+```bash
+cd terraform
+terraform import google_firestore_database.database projects/your-project-id/databases/\(default\)
+```
   
 ## Testing
 

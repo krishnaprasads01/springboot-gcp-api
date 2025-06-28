@@ -62,14 +62,20 @@ resource "google_project_iam_member" "firestore_user" {
   depends_on = [google_service_account.cloud_run_sa]
 }
 
-# Reference existing Firestore database (instead of creating new one)
-# Note: Only one default Firestore database is allowed per GCP project
-# If database doesn't exist, create it manually first:
-# gcloud firestore databases create --location=us-central1
-data "google_firestore_database" "database" {
-  project  = var.project_id
-  database = "(default)"
-  
+# Firestore database - import existing or create new
+# If database already exists, import it first:
+# terraform import google_firestore_database.database projects/YOUR_PROJECT_ID/databases/(default)
+resource "google_firestore_database" "database" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.firestore_location
+  type        = "FIRESTORE_NATIVE"
+
+  # Prevent accidental destruction of database with data
+  lifecycle {
+    prevent_destroy = true
+  }
+
   depends_on = [google_project_service.required_apis]
 }
 
@@ -125,7 +131,7 @@ resource "google_cloud_run_v2_service" "api_service" {
   
   depends_on = [
     google_project_service.required_apis,
-    data.google_firestore_database.database,
+    google_firestore_database.database,
     google_project_iam_member.firestore_user
   ]
 }
