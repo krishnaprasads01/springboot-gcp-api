@@ -40,14 +40,9 @@ resource "google_project_service" "required_apis" {
   disable_on_destroy         = false
 }
 
-# Random suffix for unique resource names
-resource "random_id" "suffix" {
-  byte_length = 4
-}
-
 # Service Account for Cloud Run with Firestore access
 resource "google_service_account" "cloud_run_sa" {
-  account_id   = "${var.app_name}-sa-${random_id.suffix.hex}"
+  account_id   = "${var.app_name}-sa"
   display_name = "Cloud Run Service Account for ${var.app_name}"
   
   depends_on = [google_project_service.required_apis]
@@ -85,7 +80,7 @@ resource "google_firestore_database" "database" {
 
 # Cloud Run Service with Firestore configuration
 resource "google_cloud_run_v2_service" "api_service" {
-  name     = "${var.app_name}-service-${random_id.suffix.hex}"
+  name     = "${var.app_name}-service"
   location = var.region
   
   template {
