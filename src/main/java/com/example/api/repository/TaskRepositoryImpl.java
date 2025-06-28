@@ -1,5 +1,6 @@
 package com.example.api.repository;
 
+import com.example.api.config.TaskConverter;
 import com.example.api.model.TaskNoSQL;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.Firestore;
@@ -20,6 +21,9 @@ public class TaskRepositoryImpl implements TaskRepositoryNoSQL {
     @Autowired
     private Firestore firestore;
     
+    @Autowired
+    private TaskConverter taskConverter;
+    
     @Override
     public List<TaskNoSQL> findAll() throws ExecutionException, InterruptedException {
         List<TaskNoSQL> tasks = new ArrayList<>();
@@ -28,9 +32,15 @@ public class TaskRepositoryImpl implements TaskRepositoryNoSQL {
                 .get()
                 .getDocuments()
                 .forEach(document -> {
-                    TaskNoSQL task = document.toObject(TaskNoSQL.class);
-                    task.setId(document.getId());
-                    tasks.add(task);
+                    try {
+                        TaskNoSQL task = taskConverter.convertFromFirestore(document);
+                        if (task != null) {
+                            tasks.add(task);
+                        }
+                    } catch (Exception e) {
+                        // Log error but continue processing other documents
+                        System.err.println("Error converting document " + document.getId() + ": " + e.getMessage());
+                    }
                 });
         return tasks;
     }
@@ -43,9 +53,13 @@ public class TaskRepositoryImpl implements TaskRepositoryNoSQL {
                 .get();
         
         if (document.exists()) {
-            TaskNoSQL task = document.toObject(TaskNoSQL.class);
-            task.setId(document.getId());
-            return Optional.of(task);
+            try {
+                TaskNoSQL task = taskConverter.convertFromFirestore(document);
+                return Optional.ofNullable(task);
+            } catch (Exception e) {
+                System.err.println("Error converting document " + id + ": " + e.getMessage());
+                return Optional.empty();
+            }
         }
         return Optional.empty();
     }
@@ -84,9 +98,14 @@ public class TaskRepositoryImpl implements TaskRepositoryNoSQL {
                 .get()
                 .getDocuments()
                 .forEach(document -> {
-                    TaskNoSQL task = document.toObject(TaskNoSQL.class);
-                    task.setId(document.getId());
-                    tasks.add(task);
+                    try {
+                        TaskNoSQL task = taskConverter.convertFromFirestore(document);
+                        if (task != null) {
+                            tasks.add(task);
+                        }
+                    } catch (Exception e) {
+                        System.err.println("Error converting document " + document.getId() + ": " + e.getMessage());
+                    }
                 });
         return tasks;
     }

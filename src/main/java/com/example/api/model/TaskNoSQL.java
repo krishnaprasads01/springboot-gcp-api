@@ -207,26 +207,32 @@ public class TaskNoSQL {
     }
     
     // Legacy field getters/setters for backwards compatibility
+    @JsonIgnore
     public Object getLegacyCreatedAt() {
         return createdAt;
     }
     
+    @JsonIgnore
     public void setLegacyCreatedAt(Object createdAt) {
         this.createdAt = createdAt;
     }
     
+    @JsonIgnore
     public Object getLegacyUpdatedAt() {
         return updatedAt;
     }
     
+    @JsonIgnore
     public void setLegacyUpdatedAt(Object updatedAt) {
         this.updatedAt = updatedAt;
     }
     
+    @JsonIgnore
     public Object getLegacyDueDate() {
         return dueDate;
     }
     
+    @JsonIgnore
     public void setLegacyDueDate(Object dueDate) {
         this.dueDate = dueDate;
     }
