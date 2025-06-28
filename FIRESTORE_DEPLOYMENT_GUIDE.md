@@ -9,7 +9,7 @@ This document describes the updated Terraform configuration and Spring Boot setu
 ### 1. Terraform Configuration (`terraform/main.tf`)
 
 - **Added Firestore API**: Enabled `firestore.googleapis.com` in required APIs
-- **Provisioned Firestore Database**: Created native Firestore database with location `us-central`
+- **Provisioned Firestore Database**: Created native Firestore database with location `us-central1`
 - **Service Account Permissions**: Added `roles/datastore.user` role for Cloud Run service account
 - **Environment Variables**: Configured Cloud Run with proper Firestore environment variables:
   - `GCP_PROJECT_ID`: Project ID for Firestore connection
@@ -29,7 +29,7 @@ This document describes the updated Terraform configuration and Spring Boot setu
 
 #### Firestore Database
 - **Type**: `FIRESTORE_NATIVE`
-- **Location**: `us-central` (configurable via `firestore_location` variable)
+- **Location**: `us-central1` (configurable via `firestore_location` variable)
 - **Name**: `(default)` (the default Firestore database)
 
 #### Service Account Permissions
@@ -60,7 +60,7 @@ This document describes the updated Terraform configuration and Spring Boot setu
    ```hcl
    project_id        = "your-actual-project-id"
    region            = "us-central1"
-   firestore_location = "us-central"  # Must be compatible with your region
+   firestore_location = "us-central1"  # Must be compatible with your region
    app_name          = "springboot-gcp-api"
    environment       = "prod"
    ```

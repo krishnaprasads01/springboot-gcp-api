@@ -42,7 +42,7 @@ variable "database_version" {
 variable "firestore_location" {
   description = "Firestore database location"
   type        = string
-  default     = "us-central"
+  default     = "us-central1"
 }
 
 variable "min_instances" {

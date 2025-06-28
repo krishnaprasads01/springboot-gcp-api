@@ -11,13 +11,13 @@ Successfully configured the Spring Boot Task API for unified Firestore deploymen
 **Updated Terraform files to provision Firestore:**
 - **`terraform/main.tf`**: 
   - Added Firestore API enablement (`firestore.googleapis.com`)
-  - Created native Firestore database with `us-central` location
+  - Created native Firestore database with `us-central1` location
   - Configured service account with `roles/datastore.user` permissions
   - Set up Cloud Run with proper Firestore environment variables
   - Increased memory allocation to 1Gi for better performance
 
 - **`terraform/variables.tf`**: 
-  - Added `firestore_location` variable (default: `us-central`)
+  - Added `firestore_location` variable (default: `us-central1`)
   - Deprecated old SQL-related variables
 
 - **`terraform/outputs.tf`**: 
@@ -88,7 +88,7 @@ Edit `terraform/terraform.tfvars`:
 ```hcl
 project_id        = "your-actual-project-id"
 region            = "us-central1"
-firestore_location = "us-central"
+firestore_location = "us-central1"
 environment       = "prod"
 ```
 
