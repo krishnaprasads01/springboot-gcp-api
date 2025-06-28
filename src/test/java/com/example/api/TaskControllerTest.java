@@ -1,8 +1,8 @@
 package com.example.api;
 
-import com.example.api.controller.TaskController;
-import com.example.api.model.Task;
-import com.example.api.service.TaskService;
+import com.example.api.controller.TaskNoSQLController;
+import com.example.api.model.TaskNoSQL;
+import com.example.api.service.TaskNoSQLService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,32 +16,32 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(TaskController.class)
+@WebMvcTest(TaskNoSQLController.class)
 public class TaskControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockBean
-    private TaskService taskService;
+    private TaskNoSQLService taskService;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @Test
     public void testGetAllTasks() throws Exception {
-        Task task1 = new Task("Task 1", "Description 1");
-        task1.setId(1L);
+        TaskNoSQL task1 = new TaskNoSQL("Task 1", "Description 1");
+        task1.setId("task-1");
         task1.setCreatedAt(LocalDateTime.now());
         task1.setUpdatedAt(LocalDateTime.now());
         
-        Task task2 = new Task("Task 2", "Description 2");
-        task2.setId(2L);
+        TaskNoSQL task2 = new TaskNoSQL("Task 2", "Description 2");
+        task2.setId("task-2");
         task2.setCreatedAt(LocalDateTime.now());
         task2.setUpdatedAt(LocalDateTime.now());
 
@@ -58,52 +58,52 @@ public class TaskControllerTest {
 
     @Test
     public void testGetTaskById() throws Exception {
-        Task task = new Task("Test Task", "Test Description");
-        task.setId(1L);
+        TaskNoSQL task = new TaskNoSQL("Test Task", "Test Description");
+        task.setId("task-1");
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
 
-        when(taskService.getTaskById(1L)).thenReturn(Optional.of(task));
+        when(taskService.getTaskById("task-1")).thenReturn(Optional.of(task));
 
-        mockMvc.perform(get("/api/tasks/1"))
+        mockMvc.perform(get("/api/tasks/task-1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value("task-1"))
                 .andExpect(jsonPath("$.title").value("Test Task"))
                 .andExpect(jsonPath("$.description").value("Test Description"));
     }
 
     @Test
     public void testGetTaskByIdNotFound() throws Exception {
-        when(taskService.getTaskById(999L)).thenReturn(Optional.empty());
+        when(taskService.getTaskById("nonexistent")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/api/tasks/999"))
+        mockMvc.perform(get("/api/tasks/nonexistent"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     public void testCreateTask() throws Exception {
-        Task inputTask = new Task("New Task", "New Description");
-        Task savedTask = new Task("New Task", "New Description");
-        savedTask.setId(1L);
+        TaskNoSQL inputTask = new TaskNoSQL("New Task", "New Description");
+        TaskNoSQL savedTask = new TaskNoSQL("New Task", "New Description");
+        savedTask.setId("task-1");
         savedTask.setCreatedAt(LocalDateTime.now());
         savedTask.setUpdatedAt(LocalDateTime.now());
 
-        when(taskService.createTask(any(Task.class))).thenReturn(savedTask);
+        when(taskService.createTask(any(TaskNoSQL.class))).thenReturn(savedTask);
 
         mockMvc.perform(post("/api/tasks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(inputTask)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value("task-1"))
                 .andExpect(jsonPath("$.title").value("New Task"))
                 .andExpect(jsonPath("$.description").value("New Description"));
     }
 
     @Test
     public void testCreateTaskWithInvalidData() throws Exception {
-        Task invalidTask = new Task("", ""); // Empty title should fail validation
+        TaskNoSQL invalidTask = new TaskNoSQL("", ""); // Empty title should fail validation
 
         mockMvc.perform(post("/api/tasks")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -113,27 +113,27 @@ public class TaskControllerTest {
 
     @Test
     public void testUpdateTask() throws Exception {
-        Task updatedTask = new Task("Updated Task", "Updated Description");
-        updatedTask.setId(1L);
-        updatedTask.setStatus(Task.TaskStatus.COMPLETED);
+        TaskNoSQL updatedTask = new TaskNoSQL("Updated Task", "Updated Description");
+        updatedTask.setId("task-1");
+        updatedTask.setStatus(TaskNoSQL.TaskStatus.COMPLETED);
         updatedTask.setCreatedAt(LocalDateTime.now());
         updatedTask.setUpdatedAt(LocalDateTime.now());
 
-        when(taskService.updateTask(anyLong(), any(Task.class))).thenReturn(updatedTask);
+        when(taskService.updateTask(anyString(), any(TaskNoSQL.class))).thenReturn(updatedTask);
 
-        mockMvc.perform(put("/api/tasks/1")
+        mockMvc.perform(put("/api/tasks/task-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updatedTask)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.id").value("task-1"))
                 .andExpect(jsonPath("$.title").value("Updated Task"))
                 .andExpect(jsonPath("$.status").value("COMPLETED"));
     }
 
     @Test
     public void testDeleteTask() throws Exception {
-        mockMvc.perform(delete("/api/tasks/1"))
+        mockMvc.perform(delete("/api/tasks/task-1"))
                 .andExpect(status().isNoContent());
     }
 }
