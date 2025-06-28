@@ -107,6 +107,14 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <jvmArguments>
+                        --add-opens=java.base/java.time.chrono=ALL-UNNAMED
+                        --add-opens=java.base/java.time=ALL-UNNAMED
+                        --add-opens=java.base/java.lang=ALL-UNNAMED
+                        --add-opens=java.base/java.util=ALL-UNNAMED
+                    </jvmArguments>
+                </configuration>
             </plugin>
             
             <!-- Google Cloud Build Plugin -->
@@ -122,6 +130,10 @@
                         <jvmFlags>
                             <jvmFlag>-Xms512m</jvmFlag>
                             <jvmFlag>-Xmx1024m</jvmFlag>
+                            <jvmFlag>--add-opens=java.base/java.time.chrono=ALL-UNNAMED</jvmFlag>
+                            <jvmFlag>--add-opens=java.base/java.time=ALL-UNNAMED</jvmFlag>
+                            <jvmFlag>--add-opens=java.base/java.lang=ALL-UNNAMED</jvmFlag>
+                            <jvmFlag>--add-opens=java.base/java.util=ALL-UNNAMED</jvmFlag>
                         </jvmFlags>
                         <ports>
                             <port>8080</port>
