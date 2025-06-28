@@ -5,27 +5,40 @@ A sample Spring Boot REST API with PostgreSQL database, designed for deployment 
 ## Features
 
 - ✅ RESTful API with CRUD operations for Task management
-- ✅ PostgreSQL database with Cloud SQL
+- ✅ **Dual Database Support**: PostgreSQL (JPA) and Firestore (NoSQL)
 - ✅ Containerized application with Docker
 - ✅ Infrastructure as Code with Terraform
 - ✅ CI/CD with GitHub Actions
 - ✅ Health checks and monitoring
 - ✅ Security scanning with Trivy
 - ✅ Environment-specific configurations
+- ✅ **Firestore Integration** with Spring Cloud GCP
 
 ## API Endpoints
 
+### PostgreSQL/JPA Endpoints (Default)
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/` | Root endpoint with API information |
 | GET | `/health` | Health check endpoint |
 | GET | `/api/tasks` | Get all tasks |
-| GET | `/api/tasks/{id}` | Get task by ID |
+| GET | `/api/tasks/{id}` | Get task by ID (Long) |
 | POST | `/api/tasks` | Create a new task |
 | PUT | `/api/tasks/{id}` | Update an existing task |
 | DELETE | `/api/tasks/{id}` | Delete a task |
 | GET | `/api/tasks/status/{status}` | Get tasks by status |
 | GET | `/api/tasks/search?keyword={keyword}` | Search tasks |
+
+### NoSQL Endpoints (use `firestore`, `mongodb`, or `dynamodb` profile)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/nosql/tasks` | Get all tasks from NoSQL database |
+| GET | `/api/nosql/tasks/{id}` | Get task by ID (String UUID) |
+| POST | `/api/nosql/tasks` | Create a new task |
+| PUT | `/api/nosql/tasks/{id}` | Update an existing task |
+| DELETE | `/api/nosql/tasks/{id}` | Delete a task |
+| GET | `/api/nosql/tasks/status/{status}` | Get tasks by status |
+| GET | `/api/nosql/tasks/search?keyword={keyword}` | Search tasks |
 
 ## Task Status Values
 
@@ -51,8 +64,42 @@ cd springboot-gcp-api
 ```
 
 2. Run the application:
+
+#### With H2 Database (Default):
 ```bash
 ./mvnw spring-boot:run
+```
+
+#### With Firestore:
+```bash
+# Set environment variables
+export GCP_PROJECT_ID=your-project-id
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account-key.json
+
+# Run with Firestore profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=firestore
+```
+
+#### With MongoDB:
+```bash
+# Run with MongoDB profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=mongodb
+```
+
+#### With DynamoDB:
+```bash
+# Set AWS credentials
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=your-key
+export AWS_SECRET_ACCESS_KEY=your-secret
+
+# Run with DynamoDB profile
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dynamodb
+```
+
+#### With PostgreSQL:
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgresql
 ```
 
 3. Access the application:
@@ -299,6 +346,59 @@ terraform show
 # Test local connectivity
 curl -f http://localhost:8080/health
 ```
+
+## Database Options
+
+This application supports multiple database backends:
+
+### 1. H2 In-Memory Database (Default - Local Development)
+- **Profile**: `local` or no profile
+- **Use Case**: Local development and testing
+- **Configuration**: Automatic, no setup required
+- **Data Persistence**: None (in-memory only)
+
+### 2. PostgreSQL with Cloud SQL (Production)
+- **Profile**: `postgresql` or default in production
+- **Use Case**: Traditional relational database needs
+- **Configuration**: Requires Cloud SQL instance
+- **Features**: ACID compliance, complex queries, joins
+
+### 3. NoSQL Databases (Cloud-Native, Flexible)
+- **Profiles**: `firestore`, `mongodb`, `dynamodb`
+- **Use Case**: Serverless, scalable NoSQL workloads
+- **Configuration**: Varies by database provider
+- **Switching**: Simply change the profile - no code changes needed
+- **Available Implementations**:
+  - ✅ **Firestore** (Google Cloud) - Production ready
+  - 🚧 **MongoDB** - Template provided
+  - 🚧 **DynamoDB** (AWS) - Template provided
+  - 🔄 **Custom** - Easy to add new implementations
+
+**Benefits of NoSQL approach:**
+- Database-agnostic code
+- Easy to switch providers
+- Cloud-native scalability
+- No vendor lock-in
+
+### Using NoSQL Databases
+
+For detailed NoSQL setup instructions, see [FIRESTORE_SETUP.md](./FIRESTORE_SETUP.md).
+
+**Quick start with Firestore:**
+```bash
+export GCP_PROJECT_ID=your-project-id
+./mvnw spring-boot:run -Dspring-boot.run.profiles=firestore
+```
+
+**Quick start with MongoDB:**
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=mongodb
+```
+
+**NoSQL Task Model includes additional fields:**
+- `dueDate`: Task deadline
+- `assignee`: Person assigned to the task
+- String-based UUIDs instead of Long IDs
 
 ## Contributing
 

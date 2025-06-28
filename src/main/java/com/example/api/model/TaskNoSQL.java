@@ -1,50 +1,43 @@
 package com.example.api.model;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "tasks")
-public class Task {
+public class TaskNoSQL {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
     
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title must not exceed 255 characters")
-    @Column(nullable = false)
     private String title;
     
     @Size(max = 1000, message = "Description must not exceed 1000 characters")
-    @Column(length = 1000)
     private String description;
     
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private TaskStatus status = TaskStatus.PENDING;
     
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
     
-    @LastModifiedDate
-    @Column(nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime updatedAt;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    private LocalDateTime dueDate;
+    
+    private String assignee;
     
     public enum TaskStatus {
         PENDING, IN_PROGRESS, COMPLETED, CANCELLED
     }
     
     // Constructors
-    public Task() {}
+    public TaskNoSQL() {}
     
-    public Task(String title, String description) {
+    public TaskNoSQL(String title, String description) {
         this.title = title;
         this.description = description;
         this.createdAt = LocalDateTime.now();
@@ -52,11 +45,11 @@ public class Task {
     }
     
     // Getters and Setters
-    public Long getId() {
+    public String getId() {
         return id;
     }
     
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
     
@@ -66,6 +59,7 @@ public class Task {
     
     public void setTitle(String title) {
         this.title = title;
+        this.updatedAt = LocalDateTime.now();
     }
     
     public String getDescription() {
@@ -74,6 +68,7 @@ public class Task {
     
     public void setDescription(String description) {
         this.description = description;
+        this.updatedAt = LocalDateTime.now();
     }
     
     public TaskStatus getStatus() {
@@ -82,6 +77,7 @@ public class Task {
     
     public void setStatus(TaskStatus status) {
         this.status = status;
+        this.updatedAt = LocalDateTime.now();
     }
     
     public LocalDateTime getCreatedAt() {
@@ -100,14 +96,35 @@ public class Task {
         this.updatedAt = updatedAt;
     }
     
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    public LocalDateTime getDueDate() {
+        return dueDate;
     }
     
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public void setDueDate(LocalDateTime dueDate) {
+        this.dueDate = dueDate;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    public String getAssignee() {
+        return assignee;
+    }
+    
+    public void setAssignee(String assignee) {
+        this.assignee = assignee;
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    @Override
+    public String toString() {
+        return "TaskNoSQL{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", description='" + description + '\'' +
+                ", status=" + status +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                ", dueDate=" + dueDate +
+                ", assignee='" + assignee + '\'' +
+                '}';
     }
 }

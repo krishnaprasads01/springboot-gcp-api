@@ -28,6 +28,9 @@ spring:
   cloud:
     gcp:
       project-id: ${GCP_PROJECT_ID:}
+      firestore:
+        enabled: ${GCP_FIRESTORE_ENABLED:true}
+        project-id: ${GCP_PROJECT_ID:}
       sql:
         enabled: ${GCP_SQL_ENABLED:false}
         database-name: ${GCP_DATABASE_NAME:}
@@ -90,16 +93,25 @@ spring:
     activate:
       on-profile: firestore
   
-  # No datasource needed for Firestore
-  jpa:
-    hibernate:
-      ddl-auto: none  # Disable JPA for NoSQL
+  # Disable JPA/SQL datasource for Firestore
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   
   cloud:
     gcp:
+      project-id: ${GCP_PROJECT_ID:}
       firestore:
         enabled: true
         project-id: ${GCP_PROJECT_ID:}
+
+# Logging configuration for Firestore
+logging:
+  level:
+    com.google.cloud.firestore: INFO
+    com.example.api: DEBUG
+    root: INFO
 
 ---
 spring:
