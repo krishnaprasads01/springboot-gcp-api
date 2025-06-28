@@ -62,13 +62,14 @@ resource "google_project_iam_member" "firestore_user" {
   depends_on = [google_service_account.cloud_run_sa]
 }
 
-# Create Firestore database
-resource "google_firestore_database" "database" {
-  project     = var.project_id
-  name        = "(default)"
-  location_id = var.firestore_location
-  type        = "FIRESTORE_NATIVE"
-
+# Reference existing Firestore database (instead of creating new one)
+# Note: Only one default Firestore database is allowed per GCP project
+# If database doesn't exist, create it manually first:
+# gcloud firestore databases create --location=us-central1
+data "google_firestore_database" "database" {
+  project  = var.project_id
+  database = "(default)"
+  
   depends_on = [google_project_service.required_apis]
 }
 
@@ -124,7 +125,7 @@ resource "google_cloud_run_v2_service" "api_service" {
   
   depends_on = [
     google_project_service.required_apis,
-    google_firestore_database.database,
+    data.google_firestore_database.database,
     google_project_iam_member.firestore_user
   ]
 }
